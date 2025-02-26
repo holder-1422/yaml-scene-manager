@@ -1,0 +1,5 @@
+tkinter  # GUI framework
+pyyaml   # YAML file parsing and management
+os       # File and folder operations
+datetime # Timestamp management
+copy     # Data duplication for scenes and backups

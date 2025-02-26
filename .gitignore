@@ -1,0 +1,20 @@
+# Byte-compiled files
+__pycache__/
+*.pyc
+
+# Backup files
+/backups/
+*.bak
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Build and executable files
+*.exe
+*.app
+/dist/
