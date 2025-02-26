@@ -1,0 +1,205 @@
+start: "s1"
+videos:
+  s1: "videos/Scene1.mp4"
+  s1.1: "videos/Scene1-A.mp4"
+  s1.2: "videos/Scene1-B.mp4"
+  s2.1: "videos/Scene2.mp4"
+  s2.1.1: "videos/Scene2-A.mp4"
+  s2.1.2: "videos/Scene2-B.mp4"
+  s3.1: "videos/Scene3.mp4"
+  s3.1.1: "videos/Scene3-A.mp4"
+  s3.1.2: "videos/Scene3-B.mp4"
+  s3.1.1.1: "videos/Scene3-B.mp4"
+  s3.1.1.2: "videos/Scene3-C.mp4"
+  s3.1.2.2: "videos/Scene3-C.mp4"
+  s4.1: "videos/Scene4.mp4"
+  s4.1.1: "videos/Scene4-A.mp4"
+  s4.2: "videos/Scene4-B.mp4"
+  i4.2.1: "videos/Scene4-1-b.mp4"
+  i4.2.2: "videos/Scene4-1-c.mp4"
+  i4.2.3: "videos/Scene4-1-d.mp4"
+  s0.0: "videos/junk.mp4"
+  s0.1: "videos/junk1.mp4"
+  s0.2: "videos/junk2.mp4"
+
+options:
+  s1:
+    scene_type: "Continue"
+    continue_heading: "Do you want an early morning satisfaction?"
+    choices:
+      "Just an Oral Quickie":
+        next: "s1.1"
+        image: "images/1-A.jpg"
+      "I wouldn't mind playing with her pussy":
+        next: "s1.2"
+        image: "images/1-B.jpg"
+      "I can wait. She better get ready":
+        next: "s2.1"
+        image: "images/2.jpg"
+
+  s1.1:
+    scene_type: "Question"
+    question_heading: "She Left you Hanging... Maybe you could steal some please in the shower"
+    choices:
+      "That's a good idea. I follow her.":
+        next: "s2.1"
+        image: "images/2.jpg"
+      "Nah, i'll be a good boy and nap a bit. We will eat lunch together.":
+        next: "s3.1"
+        image: "images/3.jpg"
+
+  s1.2:
+    scene_type: "Question"
+    question_heading: "She Left you Hanging... Maybe you could steal some please in the shower"
+    choices:
+      "That's a good idea. I follow her.":
+        next: "s2.1"
+        image: "images/2.jpg"
+      "Nah, i'll be a good boy and nap a bit. We will eat lunch together.":
+        next: "s3.1"
+        image: "images/3.jpg"
+
+  s2.1:
+    scene_type: "Question"
+    question_heading: "Will you offer a helping hand?"
+    choices:
+      "Maybe a little bit":
+        next: "s2.1.1"
+        image: "images/2-A.jpg"
+      "Oh, I will make her excited":
+        next: "s2.1.2"
+        image: "images/2-B.jpg"
+      "I better not pester her. We will meet at lunch anyway.":
+        next: "s3.1"
+        image: "images/3.jpg"
+
+  s2.1.1:
+    scene_type: "Continue"
+    continue_heading: "Let's have some breakfast"
+    choices:
+      "Let's go eat breakfast!":
+        next: "s3.1"
+        image: "images/3.jpg"
+
+  s2.1.2:
+    scene_type: "Continue"
+    continue_heading: "Let's have some breakfast"
+    choices:
+      "Let's go eat breakfast!":
+        next: "s3.1"
+        image: "images/3.jpg"
+
+  s3.1:
+    scene_type: "Question"
+    question_heading: "What do you want to talk about?"
+    choices:
+      "Something Casual. I love to hear about her.":
+        next: "s3.1.1"
+        image: "images/3-A.jpg"
+      "I can't get enough of her kind side.":
+        next: "s3.1.2"
+        image: "images/3-B.jpg"
+
+  s3.1.1:
+    scene_type: "Question"
+    question_heading: "Any other topic you are interested in?"
+    choices:
+      "I'm curious about her actual sexual preferences.":
+        next: "s3.1.1.1"
+        image: "images/3-B.jpg"
+      "No, I'm good for now. On the other hand, she promised me something.":
+        next: "s3.1.1.2"
+        image: "images/3-C.jpg"
+
+  s3.1.1.1:
+    scene_type: "Question"
+    question_heading: "Any other topic you are interested in?"
+    choices:
+      "Something Casual... I love to hear about her.":
+        next: "s3.1.1"
+        image: "images/3-A.jpg"
+      "No, I'm good for now. On the other hand, she promised me something.":
+        next: "s4.1"
+        image: "images/3-C.jpg"
+
+  s3.1.1.2:
+    scene_type: "Continue"
+    continue_heading: "Don't forget you promised."
+    choices:
+      "Continue":
+        next: "s4.1"
+        image: "images/3-C.jpg"
+
+  s3.1.2:
+    scene_type: "Question"
+    question_heading: "Any other topic you are interested in?"
+    choices:
+      "Something Casual... I love to hear about her.":
+        next: "s3.1.1"
+        image: "images/3-A.jpg"
+      "No, I'm good for now. On the other hand, she promised me something.":
+        next: "s3.1.2.2"
+        image: "images/3-C.jpg"
+
+  s3.1.2.2:
+    scene_type: "Continue"
+    continue_heading: "Don't Forget you promised."
+    choices:
+      "button name":
+        next: "s4.1"
+        image: "images/3-C.jpg"
+
+  s4.1:
+    scene_type: "Question"
+    question_heading: "How could your sweet model please you?"
+    choices:
+      "How about using her lovely feet?":
+        next: "s4.1.1"
+        image: "images/4-A.jpg"
+      "Why waste the time when she can use her lips right away.":
+        next: "s4.2"
+        image: "images/4-B.jpg"
+
+  s4.1.1:
+    scene_type: "Continue"
+    continue_heading: ""
+    choices:
+      "Let's have her use her lips":
+        next: "s4.2"
+        image: "images/4-B.jpg"
+
+  s4.2:
+    scene_type: "Continue"
+    continue_heading: "Let's get a blowjob"
+    choices:
+      "Continue":
+        next: "s4.3"
+        image: "images/4-2-100-133.jpg"
+      "Deepthroat":
+        next: "i4.2.1"
+        image: "images/4-1-b-100-133.jpg"
+        temporary: true
+      "Ball Sucking":
+        next: "i4.2.2"
+        image: "images/4-1-c-100-133.jpg"
+        temporary: true
+      "Tit Teasing":
+        next: "i4.2.3"
+        image: "images/4-1-d-100-133.jpg"
+        temporary: true
+
+  s4.3:
+    scene_type: "Continue"
+    continue_heading: ""
+    choices:
+      "Continue":
+        next: "s4.4"
+        image: "images/1.jpg"
+
+  s4.4:
+    scene_type: "Continue"
+    continue_heading: "End of Sequence"
+    choices:
+      "End":
+        next: "s1"
+        image: "images/1.jpg"
