@@ -22,17 +22,17 @@ class SceneEditor:
         # Save Button at the Top
         save_btn = tk.Button(self.frame, text="Save Scene", command=self.save_scene)
         save_btn.pack(pady=10)
-
+    
         # Scene ID
         tk.Label(self.frame, text="Scene ID:").pack(pady=5)
         self.scene_id_entry = tk.Entry(self.frame)
         self.scene_id_entry.pack(pady=5)
-
+    
         # Pre-fill scene ID if editing
         if self.scene_data:
             self.scene_id_entry.insert(0, self.scene_data["scene_id"])
             self.scene_id_entry.config(state='disabled')  # Prevent changing ID
-
+    
         # Video Selection Dropdown with Dynamic Refresh
         tk.Label(self.frame, text="Select Video:").pack(pady=5)
         self.video_var = tk.StringVar()
@@ -41,12 +41,11 @@ class SceneEditor:
         
         # Refresh videos dynamically on click
         self.video_dropdown.bind("<Button-1>", lambda event: self.refresh_dropdown("videos"))
-        
-
+    
         # Pre-fill video if editing
-        if self.scene_data and self.scene_data["video"]:
+        if self.scene_data and "video" in self.scene_data:
             self.video_var.set(self.scene_data["video"])
-
+    
         # Scene Type
         tk.Label(self.frame, text="Scene Type:").pack(pady=5)
         self.scene_type_var = tk.StringVar()
@@ -56,62 +55,83 @@ class SceneEditor:
             values=["Continue", "Main", "Question"]
         )
         self.scene_type_dropdown.pack(pady=5)
-
+    
         if self.scene_data:
             self.scene_type_var.set(self.scene_data["scene_type"])
-
-        # Scene Heading
+    
+        # Bind dropdown change to update heading label dynamically
+        self.scene_type_dropdown.bind("<<ComboboxSelected>>", self.update_heading_label)
+    
+        # Scene Heading Label and Entry
         self.heading_label = tk.Label(self.frame, text="Scene Heading:")
         self.heading_label.pack(pady=5)
         self.heading_entry = tk.Entry(self.frame)
         self.heading_entry.pack(pady=5)
-
+    
+        # Determine correct heading key based on scene type
         if self.scene_data:
-            self.heading_entry.insert(0, self.scene_data["heading"])
-
+            scene_type = self.scene_data.get("scene_type", "")
+            if scene_type == "Main":
+                heading_key = "main_heading"
+                self.heading_label.config(text="Main Heading:")
+            else:
+                heading_key = "scene_heading"
+                self.heading_label.config(text="Scene Heading:")
+    
+            # Insert heading if available
+            self.heading_entry.insert(0, self.scene_data.get(heading_key, ""))
+    
         # Choices Section (Scrollable Frame)
         choices_container = tk.Frame(self.frame)
         choices_container.pack(fill=tk.BOTH, expand=True, pady=10)
         choices_container.grid_rowconfigure(0, weight=1)
         choices_container.grid_columnconfigure(0, weight=1)
-        
-
+    
         # Add a canvas for scrolling
         canvas = tk.Canvas(choices_container)
         scrollbar = tk.Scrollbar(choices_container, orient="vertical", command=canvas.yview)
         scrollable_frame = tk.Frame(canvas)
-
+    
         scrollable_frame.bind(
             "<Configure>",
             lambda e: canvas.configure(
                 scrollregion=canvas.bbox("all")
             )
         )
-
+    
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
-
+    
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
+    
         self.choices_frame = scrollable_frame
         self.choices = []
-
+    
         # Pre-fill existing choices if editing
         if self.scene_data and "choices" in self.scene_data:
             for existing_choice in self.scene_data["choices"]:
                 self.add_choice(existing_choice)
         else:
             self.add_choice()  # Add one empty choice if new
-
+    
         # Add Choice Button
         add_choice_btn = tk.Button(self.frame, text="Add Choice", command=self.add_choice)
         add_choice_btn.pack(pady=10)
-        
+    
         # Refresh Media Files Button
         refresh_media_btn = tk.Button(self.frame, text="Refresh Media Files", command=lambda: self.refresh_dropdown("videos"))
         refresh_media_btn.pack(pady=10)
-
+    
+    def update_heading_label(self, event=None):
+        """ Update heading label dynamically based on scene type selection. """
+        selected_type = self.scene_type_var.get()
+    
+        if selected_type == "Main":
+            self.heading_label.config(text="Main Heading:")
+        else:
+            self.heading_label.config(text="Scene Heading:")
+    
 
     def on_scene_type_change(self, event=None):
         selected_type = self.scene_type_var.get()
