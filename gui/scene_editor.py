@@ -53,7 +53,7 @@ class SceneEditor:
         self.scene_type_dropdown = ttk.Combobox(
             self.frame,
             textvariable=self.scene_type_var,
-            values=["Continue", "Question"]
+            values=["Continue", "Main", "Question"]
         )
         self.scene_type_dropdown.pack(pady=5)
 
@@ -111,7 +111,17 @@ class SceneEditor:
         # Refresh Media Files Button
         refresh_media_btn = tk.Button(self.frame, text="Refresh Media Files", command=lambda: self.refresh_dropdown("videos"))
         refresh_media_btn.pack(pady=10)
+
+
+    def on_scene_type_change(self, event=None):
+        selected_type = self.scene_type_var.get()
         
+        if selected_type == "Main":
+            self.heading_label.config(text="Main Heading:")
+        else:
+            self.heading_label.config(text="Scene Heading:")
+    
+
         
     def add_choice(self, existing_choice=None):
         # Create the main frame for each choice
@@ -196,31 +206,36 @@ class SceneEditor:
         video = self.video_var.get()
         scene_type = self.scene_type_var.get()
         scene_heading = self.heading_entry.get().strip()
-
+    
         if not scene_id or not video or not scene_type or not scene_heading:
             messagebox.showerror("Missing Information", "Please fill in all required fields.")
             return
-
+    
         # Create a new scene object
         new_scene = {
             "scene_id": scene_id,
             "video": video,
             "scene_type": scene_type,
-            "heading": scene_heading,
             "choices": []  # Store choices here
         }
-
+    
+        # Store heading correctly based on scene type
+        if scene_type == "Main":
+            new_scene["main_heading"] = scene_heading  # Use "main_heading" for Main scenes
+        else:
+            new_scene["scene_heading"] = scene_heading  # Keep "scene_heading" for all other types
+    
         # Save all choices
         for choice in self.choices:
             option_text = choice["option_entry"].get().strip()
             next_scene = choice["next_scene_entry"].get().strip()
             image = choice["image_var"].get()
             temporary = choice["temporary_flag"].get()
-
+    
             if not option_text or not next_scene:
                 messagebox.showerror("Missing Information", "Each choice must have an option text and a next scene ID.")
                 return
-
+    
             # Add the choice details
             new_scene["choices"].append({
                 "option": option_text,
@@ -228,8 +243,9 @@ class SceneEditor:
                 "image": image if image else None,
                 "temporary": temporary
             })
-
+    
         # Pass the scene data to the main window
         self.new_scene = new_scene
         self.save_callback(new_scene)  # Send the scene back for storage
         self.frame.destroy()  # Close the editor
+    

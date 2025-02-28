@@ -222,25 +222,33 @@ class MainWindow:
         """Convert scenes list into YAML format."""
         if not self.scenes:
             return "No scenes available."
-
+    
         yaml_structure = {
             "start": self.scenes[0]["scene_id"],  # First scene becomes the starting scene
             "videos": {},
             "options": {}
         }
-
+    
         # Fill in the videos and options sections
         for scene in self.scenes:
             scene_id = scene["scene_id"]
             video_path = f"videos/{scene['video']}" if scene["video"] else "videos/default.mp4"
             yaml_structure["videos"][scene_id] = video_path
-
+    
+            # Prepare scene data structure
             scene_data = {
                 "scene_type": scene["scene_type"],
-                "continue_heading" if scene["scene_type"] == "Continue" else "question_heading": scene["heading"],
                 "choices": {}
             }
-
+    
+            # Set the correct heading key dynamically based on scene type
+            if scene["scene_type"] == "Main":
+                scene_data["main_heading"] = scene.get("main_heading", "")
+            elif scene["scene_type"] == "Continue":
+                scene_data["continue_heading"] = scene.get("scene_heading", "")
+            else:  # Default to "scene_heading" for Question and other scene types
+                scene_data["scene_heading"] = scene.get("scene_heading", "")
+    
             # Add choices to the scene
             for choice in scene.get("choices", []):
                 choice_data = {
@@ -250,13 +258,14 @@ class MainWindow:
                     choice_data["image"] = f"images/{choice['image']}"
                 if choice["temporary"]:
                     choice_data["temporary"] = True
-
+    
                 scene_data["choices"][choice["option"]] = choice_data
-
+    
+            # Store scene data in the options section
             yaml_structure["options"][scene_id] = scene_data
-
+    
         return yaml.dump(yaml_structure, sort_keys=False, default_flow_style=False)
-        
+    
     def validate_scene_references(self):
         """Highlight choices with non-existent next scene references."""
         valid_scene_ids = {scene["scene_id"] for scene in self.scenes}
