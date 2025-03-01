@@ -176,46 +176,68 @@ class MainWindow:
         # Display a new editor inside the middle frame
         self.scene_editor = SceneEditor(self.middle_frame, self.folder_manager, self.save_scene)
 
-    def save_scene(self, updated_scene):
-        # Ensure heading is correctly stored under the appropriate key
-        scene_type = updated_scene.get("scene_type", "")
+    def save_scene(self):
+        """Saves the scene data entered in the editor and prevents errors."""
     
+        scene_id = self.scene_id_entry.get().strip()
+        video = self.video_var.get()
+        scene_type = self.scene_type_var.get()
+        scene_heading = self.heading_entry.get().strip()
+    
+        # **Ensure new_scene is initialized FIRST**
+        new_scene = {
+            "scene_id": scene_id,
+            "video": video,
+            "scene_type": scene_type,
+            "choices": []  # Initialize choices as an empty list
+        }
+    
+        # **Validate required fields**
+        if not scene_id or not video or not scene_type or not scene_heading:
+            messagebox.showerror("Missing Information", "Please fill in all required fields.")
+            return  # Exit if missing information
+    
+        # **Store heading correctly based on scene type**
         if scene_type == "Main":
-            updated_scene["main_heading"] = updated_scene.get("heading", "")
+            new_scene["main_heading"] = scene_heading
         elif scene_type == "Continue":
-            updated_scene["continue_heading"] = updated_scene.get("heading", "")
+            new_scene["continue_heading"] = scene_heading
         elif scene_type == "Question":
-            updated_scene["question_heading"] = updated_scene.get("heading", "")
+            new_scene["question_heading"] = scene_heading
     
-        # Remove the generic "heading" key after assigning it correctly
-        if "heading" in updated_scene:
-            del updated_scene["heading"]
+        # **Ensure self.choices exists before using it**
+        if not hasattr(self, "choices") or not isinstance(self.choices, list):
+            self.choices = []  # Prevent attribute errors
     
-        # Replace the scene if it already exists
-        for i, scene in enumerate(self.scenes):
-            if scene["scene_id"] == updated_scene["scene_id"]:
-                self.scenes[i] = updated_scene  # Update the existing scene
-                break
-        else:
-            # If it doesn't exist yet, add it as a new scene
-            self.scenes.append(updated_scene)
+        # **Loop through choices safely**
+        for choice in self.choices:
+            option_text = choice["option_entry"].get().strip()
+            next_scene = choice["next_scene_entry"].get().strip()
+            image = choice["image_var"].get()
+            temporary = choice["temporary_flag"].get()
     
-        # Automatically create new scenes for referenced next_scene_id
-        for choice in updated_scene.get("choices", []):
-            next_scene_id = choice["next_scene"]
-            if not self.scene_exists(next_scene_id):
-                auto_created_scene = {
-                    "scene_id": next_scene_id,
-                    "video": None,
-                    "scene_type": "Continue",
-                    "continue_heading": "[Auto-created Scene]",
-                    "choices": [],
-                    "auto_created": True
-                }
-                self.scenes.append(auto_created_scene)
+            # **Validate choice fields**
+            if not option_text or not next_scene:
+                messagebox.showerror("Missing Information", "Each choice must have an option text and a next scene ID.")
+                return  # Exit if missing information
     
-        self.update_scene_list()
-        self.update_yaml_preview()
+            # **Append the choice safely**
+            new_scene["choices"].append({
+                "option": option_text,
+                "next_scene": next_scene,
+                "image": image if image else None,
+                "temporary": bool(temporary)  # Ensure boolean type
+            })
+    
+        # **Ensure new_scene is properly stored before closing**
+        self.new_scene = new_scene  # Ensure `self.new_scene` is updated
+    
+        # **Pass the scene data to the main window**
+        self.save_callback(new_scene)  # Send the scene back for storage
+    
+        # **Close the editor**
+        self.frame.destroy()  
+    
     
 
     def update_scene_list(self):
@@ -227,11 +249,66 @@ class MainWindow:
             self.scene_listbox.insert(tk.END, display_text)
 
     def update_yaml_preview(self):
-        yaml_data = self.generate_yaml()
-        self.yaml_preview.config(state=tk.NORMAL)  # Enable editing for update
-        self.yaml_preview.delete(1.0, tk.END)  # Clear the text
-        self.yaml_preview.insert(tk.END, yaml_data)  # Insert new YAML
-        self.yaml_preview.config(state=tk.DISABLED)  # Make read-only again
+        """Regenerates the YAML preview while ensuring all referenced scenes stay in `videos`."""
+    
+        # Ensure `video_associations` exists before using it
+        if not hasattr(self, "video_associations"):
+            self.video_associations = {}
+    
+        # Ensure all referenced `next_scene` values are in `videos`
+        all_referenced_scenes = set(self.video_associations.keys())
+    
+        for scene in self.scenes:
+            for choice in scene["choices"]:
+                next_scene_id = choice["next_scene"]
+                if next_scene_id:
+                    all_referenced_scenes.add(next_scene_id)
+    
+        # Ensure all referenced scenes exist in the videos section
+        for scene_id in all_referenced_scenes:
+            if scene_id not in self.video_associations:
+                self.video_associations[scene_id] = f"videos/{scene_id}.mp4"
+    
+        # Generate the full YAML structure again
+        yaml_data = {
+            "start": self.scenes[0]["scene_id"] if self.scenes else "",
+            "videos": self.video_associations.copy(),  # Preserve all video links
+            "options": {}
+        }
+    
+        # Fill in the options section
+        for scene in self.scenes:
+            scene_data = {
+                "scene_type": scene["scene_type"],
+                "choices": {
+                    choice["option"]: {
+                        "next": choice["next_scene"],
+                        "image": f"images/{choice['image']}" if choice["image"] else "",
+                        "temporary": choice["temporary"]
+                    }
+                    for choice in scene["choices"]
+                }
+            }
+    
+            # Assign the correct heading field based on scene type
+            if scene["scene_type"] == "Main":
+                scene_data["main_heading"] = scene["heading"]
+            elif scene["scene_type"] == "Continue":
+                scene_data["continue_heading"] = scene["heading"]
+            elif scene["scene_type"] == "Question":
+                scene_data["question_heading"] = scene["heading"]
+    
+            yaml_data["options"][scene["scene_id"]] = scene_data
+    
+        # Debugging: Show final YAML data before updating the UI
+        print("\nDEBUG: Final YAML structure before updating preview:\n", yaml.dump(yaml_data, sort_keys=False, default_flow_style=False))
+    
+        # Update the YAML preview UI
+        self.yaml_preview.config(state=tk.NORMAL)
+        self.yaml_preview.delete(1.0, tk.END)
+        self.yaml_preview.insert(tk.END, yaml.dump(yaml_data, sort_keys=False, default_flow_style=False))
+        self.yaml_preview.config(state=tk.DISABLED)
+    
 
     def generate_yaml(self):
         """Convert scenes list into YAML format."""
@@ -322,8 +399,10 @@ class MainWindow:
                 messagebox.showinfo("Success", f"YAML saved successfully to {file_path}")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save YAML file:\n{e}")
-    
+        
     def load_yaml_file(self):
+        """Load a YAML file and ensure the videos section includes all referenced scenes."""
+    
         # Ask the user to select a YAML file
         file_path = filedialog.askopenfilename(
             filetypes=[("YAML files", "*.yaml")],
@@ -343,48 +422,144 @@ class MainWindow:
                 # Clear the current scenes
                 self.scenes.clear()
     
-                # Load scenes from YAML
-                for scene_id, video_path in loaded_yaml["videos"].items():
-                    scene_data = loaded_yaml["options"].get(scene_id, {})
+                # Copy the videos section so we can modify it
+                video_associations = loaded_yaml["videos"].copy()
+    
+                # Step 1: **Find all next_scene values from choices and add them to videos**
+                for scene_data in loaded_yaml["options"].values():
+                    for choice in scene_data.get("choices", {}).values():
+                        next_scene_id = choice.get("next", "")
+                        if next_scene_id and next_scene_id not in video_associations:
+                            video_associations[next_scene_id] = f"videos/{next_scene_id}.mp4"
+    
+                # Step 2: Store `video_associations` globally so other functions can access it
+                self.video_associations = video_associations  # Ensures it's available in update_yaml_preview()
+    
+                # Step 3: Load scenes from YAML, but only if they are explicitly listed in options
+                for scene_id, scene_data in loaded_yaml["options"].items():
                     scene_type = scene_data.get("scene_type", "Continue")
     
-                    # Ensure headings are stored under the correct field
-                    heading = ""
-                    if scene_type == "Main":
-                        heading = scene_data.get("main_heading", "")
-                    elif scene_type == "Continue":
-                        heading = scene_data.get("continue_heading", "")
-                    elif scene_type == "Question":
-                        heading = scene_data.get("question_heading", "")
+                    # Ensure headings are correctly assigned
+                    heading = scene_data.get("main_heading", "") if scene_type == "Main" else (
+                        scene_data.get("continue_heading", "") if scene_type == "Continue" else
+                        scene_data.get("question_heading", "")
+                    )
     
                     # Load choices
                     choices = []
                     for option_text, choice_data in scene_data.get("choices", {}).items():
+                        next_scene_id = choice_data.get("next", "")
+                        is_temporary = choice_data.get("temporary", False)
+    
                         choices.append({
                             "option": option_text,
-                            "next_scene": choice_data.get("next", ""),
+                            "next_scene": next_scene_id,
                             "image": choice_data.get("image", "").replace("images/", ""),
-                            "temporary": choice_data.get("temporary", False)
+                            "temporary": is_temporary
                         })
     
                     # Add scene to the list
-                    scene = {
+                    self.scenes.append({
                         "scene_id": scene_id,
-                        "video": video_path.replace("videos/", ""),
+                        "video": video_associations.get(scene_id, "").replace("videos/", ""),
                         "scene_type": scene_type,
-                        "heading": heading,  # Ensuring consistent heading storage
+                        "heading": heading,
                         "choices": choices
-                    }
-                    self.scenes.append(scene)
+                    })
+    
+                # Step 4: Ensure the YAML videos section is explicitly updated before preview refresh
+                loaded_yaml["videos"] = self.video_associations
     
                 # Update the GUI
                 self.update_scene_list()
                 self.update_yaml_preview()
+    
                 messagebox.showinfo("Success", f"YAML loaded successfully from {file_path}")
     
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load YAML file:\n{e}")
     
+    
+    def process_videos_section(self, loaded_yaml):
+        """Ensures all referenced scenes (from both videos and choices) exist in the videos section."""
+        
+        video_associations = loaded_yaml["videos"].copy()
+    
+        # Collect all referenced scenes, including from choices
+        referenced_scenes = set(video_associations.keys())  # Start with explicitly listed video scenes
+    
+        print("\nDEBUG: Initial video associations:", video_associations)
+    
+        for scene_id, scene_data in loaded_yaml["options"].items():
+            for option_text, choice in scene_data.get("choices", {}).items():
+                next_scene_id = choice.get("next", "")
+                is_temporary = choice.get("temporary", False)
+    
+                print(f"DEBUG: Choice '{option_text}' → next_scene: {next_scene_id}, temporary: {is_temporary}")
+    
+                if next_scene_id:
+                    referenced_scenes.add(next_scene_id)
+    
+                    # **Ensure temporary scenes are forced into videos section**
+                    if is_temporary and next_scene_id not in video_associations:
+                        video_associations[next_scene_id] = f"videos/{next_scene_id}.mp4"
+                        print(f"DEBUG: Added temporary scene to videos: {next_scene_id}")
+    
+        print("\nDEBUG: All referenced scenes:", referenced_scenes)
+    
+        # Ensure all referenced scenes exist in the videos section
+        for scene_id in referenced_scenes:
+            if scene_id not in video_associations:
+                video_associations[scene_id] = f"videos/{scene_id}.mp4"
+                print(f"DEBUG: Added to videos: {scene_id}")
+    
+        print("\nDEBUG: Final video associations:", video_associations)
+    
+        return video_associations
+
+    
+    
+    def process_options_section(self, loaded_yaml, video_associations):
+        """Loads the options section and ensures only explicitly defined scenes are added."""
+        
+        for scene_id, scene_data in loaded_yaml["options"].items():
+            scene_type = scene_data.get("scene_type", "Continue")
+    
+            # Ensure headings are correctly assigned
+            heading = scene_data.get("main_heading", "") if scene_type == "Main" else (
+                scene_data.get("continue_heading", "") if scene_type == "Continue" else
+                scene_data.get("question_heading", "")
+            )
+    
+            # Load choices
+            choices = []
+            for option_text, choice_data in scene_data.get("choices", {}).items():
+                next_scene_id = choice_data.get("next", "")
+                is_temporary = choice_data.get("temporary", False)
+    
+                # Debugging: Check if temporary scenes are being skipped correctly
+                print(f"DEBUG: Processing choice '{option_text}' → next_scene: {next_scene_id}, temporary: {is_temporary}")
+    
+                choices.append({
+                    "option": option_text,
+                    "next_scene": next_scene_id,
+                    "image": choice_data.get("image", "").replace("images/", ""),
+                    "temporary": is_temporary
+                })
+    
+            # Add scene to the list
+            self.scenes.append({
+                "scene_id": scene_id,
+                "video": video_associations.get(scene_id, "").replace("videos/", ""),
+                "scene_type": scene_type,
+                "heading": heading,
+                "choices": choices
+            })
+    
+        # Explicitly update the YAML videos section to ensure all referenced scenes are included
+        loaded_yaml["videos"] = video_associations
+        print("\nDEBUG: Final loaded videos section in YAML:", loaded_yaml["videos"])  # Debugging Step 6
+     
 
     def show_context_menu(self, event):
         """Show right-click context menu on scene list."""

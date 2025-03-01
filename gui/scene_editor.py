@@ -233,13 +233,14 @@ class SceneEditor:
             messagebox.showerror("Missing Information", "Please fill in all required fields.")
             return
     
-        # Create a new scene object
-        new_scene = {
-            "scene_id": scene_id,
-            "video": video,
-            "scene_type": scene_type,
-            "choices": []  # Store choices here
-        }
+        # Add the choice details (ensuring temporary flag is properly stored)
+        new_scene["choices"].append({
+            "option": option_text,
+            "next_scene": next_scene,
+            "image": image if image else None,
+            "temporary": bool(temporary)  # Ensure it's always a boolean value
+        })
+        
     
         # Store heading correctly based on scene type
         if scene_type == "Main":
