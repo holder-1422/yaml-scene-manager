@@ -15,6 +15,7 @@ class MainWindow:
 
         self.folder_manager = FolderManager()
         self.scenes = []  # List to store scenes
+        self.video_associations = {}  # ✅ Ensure this exists to prevent AttributeError
 
         self.setup_ui()
 
@@ -232,7 +233,11 @@ class MainWindow:
         # Refresh the scene list and YAML preview
         # Ensure the videos section gets updated
         scene_id = new_scene["scene_id"]
+        if not hasattr(self, "video_associations"):
+            self.video_associations = {}
+        
         self.video_associations[scene_id] = f"videos/{new_scene['video']}"
+        
         
         self.update_scene_list()
         self.update_yaml_preview()  # Refresh the preview with updated videos
@@ -253,8 +258,9 @@ class MainWindow:
         """Regenerates the YAML preview while ensuring all referenced scenes stay in `videos`."""
     
         # Ensure `video_associations` exists before using it
-        if not hasattr(self, "video_associations"):
+        if not hasattr(self, "video_associations") or not isinstance(self.video_associations, dict):
             self.video_associations = {}
+        
     
         # Ensure all referenced `next_scene` values are in `videos`
         all_referenced_scenes = set(self.video_associations.keys())
