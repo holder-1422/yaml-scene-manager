@@ -223,7 +223,9 @@ class SceneEditor:
     
     
 
-    def save_scene(self):
+    def save_scene(self, event=None):
+        """Saves the scene data entered in the editor and prevents errors."""
+    
         scene_id = self.scene_id_entry.get().strip()
         video = self.video_var.get()
         scene_type = self.scene_type_var.get()
@@ -231,24 +233,29 @@ class SceneEditor:
     
         if not scene_id or not video or not scene_type or not scene_heading:
             messagebox.showerror("Missing Information", "Please fill in all required fields.")
-            return
+            return  # Exit if missing information
     
-        # Add the choice details (ensuring temporary flag is properly stored)
-        new_scene["choices"].append({
-            "option": option_text,
-            "next_scene": next_scene,
-            "image": image if image else None,
-            "temporary": bool(temporary)  # Ensure it's always a boolean value
-        })
-        
+        # **Initialize `new_scene` FIRST before appending choices**
+        new_scene = {
+            "scene_id": scene_id,
+            "video": video,
+            "scene_type": scene_type,
+            "choices": []  # Initialize as empty list before appending
+        }
     
-        # Store heading correctly based on scene type
+        # **Store heading correctly based on scene type**
         if scene_type == "Main":
-            new_scene["main_heading"] = scene_heading  # Use "main_heading" for Main scenes
-        else:
-            new_scene["scene_heading"] = scene_heading  # Keep "scene_heading" for all other types
+            new_scene["main_heading"] = scene_heading
+        elif scene_type == "Continue":
+            new_scene["continue_heading"] = scene_heading
+        elif scene_type == "Question":
+            new_scene["question_heading"] = scene_heading
     
-        # Save all choices
+        # **Ensure `self.choices` exists before using it**
+        if not hasattr(self, "choices") or not isinstance(self.choices, list):
+            self.choices = []
+    
+        # **Loop through choices and append them to `new_scene`**
         for choice in self.choices:
             option_text = choice["option_entry"].get().strip()
             next_scene = choice["next_scene_entry"].get().strip()
@@ -257,18 +264,24 @@ class SceneEditor:
     
             if not option_text or not next_scene:
                 messagebox.showerror("Missing Information", "Each choice must have an option text and a next scene ID.")
-                return
+                return  # Exit if missing information
     
-            # Add the choice details
+            # **Append the choice safely**
             new_scene["choices"].append({
                 "option": option_text,
                 "next_scene": next_scene,
                 "image": image if image else None,
-                "temporary": temporary
+                "temporary": bool(temporary)  # Ensure boolean value
             })
     
-        # Pass the scene data to the main window
-        self.new_scene = new_scene
-        self.save_callback(new_scene)  # Send the scene back for storage
-        self.frame.destroy()  # Close the editor
+        # **Ensure `save_callback` is correctly called**
+        if callable(self.save_callback):
+            self.save_callback(new_scene)  # Send the scene back for storage
+        else:
+            messagebox.showerror("Error", "save_callback is not callable. Check function assignment.")
+    
+        # **Close the editor**
+        self.frame.destroy()
+    
+    
     

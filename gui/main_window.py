@@ -176,67 +176,23 @@ class MainWindow:
         # Display a new editor inside the middle frame
         self.scene_editor = SceneEditor(self.middle_frame, self.folder_manager, self.save_scene)
 
-    def save_scene(self):
-        """Saves the scene data entered in the editor and prevents errors."""
+    def save_scene(self, new_scene):
+        """Updates an existing scene or adds a new scene to the scene list."""
     
-        scene_id = self.scene_id_entry.get().strip()
-        video = self.video_var.get()
-        scene_type = self.scene_type_var.get()
-        scene_heading = self.heading_entry.get().strip()
+        scene_id = new_scene["scene_id"]
     
-        # **Ensure new_scene is initialized FIRST**
-        new_scene = {
-            "scene_id": scene_id,
-            "video": video,
-            "scene_type": scene_type,
-            "choices": []  # Initialize choices as an empty list
-        }
+        # Check if the scene already exists in self.scenes
+        for i, scene in enumerate(self.scenes):
+            if scene["scene_id"] == scene_id:
+                self.scenes[i] = new_scene  # Update existing scene
+                break
+        else:
+            self.scenes.append(new_scene)  # If not found, add as a new scene
     
-        # **Validate required fields**
-        if not scene_id or not video or not scene_type or not scene_heading:
-            messagebox.showerror("Missing Information", "Please fill in all required fields.")
-            return  # Exit if missing information
+        # Refresh the scene list and YAML preview
+        self.update_scene_list()
+        self.update_yaml_preview()
     
-        # **Store heading correctly based on scene type**
-        if scene_type == "Main":
-            new_scene["main_heading"] = scene_heading
-        elif scene_type == "Continue":
-            new_scene["continue_heading"] = scene_heading
-        elif scene_type == "Question":
-            new_scene["question_heading"] = scene_heading
-    
-        # **Ensure self.choices exists before using it**
-        if not hasattr(self, "choices") or not isinstance(self.choices, list):
-            self.choices = []  # Prevent attribute errors
-    
-        # **Loop through choices safely**
-        for choice in self.choices:
-            option_text = choice["option_entry"].get().strip()
-            next_scene = choice["next_scene_entry"].get().strip()
-            image = choice["image_var"].get()
-            temporary = choice["temporary_flag"].get()
-    
-            # **Validate choice fields**
-            if not option_text or not next_scene:
-                messagebox.showerror("Missing Information", "Each choice must have an option text and a next scene ID.")
-                return  # Exit if missing information
-    
-            # **Append the choice safely**
-            new_scene["choices"].append({
-                "option": option_text,
-                "next_scene": next_scene,
-                "image": image if image else None,
-                "temporary": bool(temporary)  # Ensure boolean type
-            })
-    
-        # **Ensure new_scene is properly stored before closing**
-        self.new_scene = new_scene  # Ensure `self.new_scene` is updated
-    
-        # **Pass the scene data to the main window**
-        self.save_callback(new_scene)  # Send the scene back for storage
-    
-        # **Close the editor**
-        self.frame.destroy()  
     
     
 
@@ -290,13 +246,16 @@ class MainWindow:
                 }
             }
     
+            # **Ensure scene["heading"] exists before using it**
+            scene_heading = scene.get("heading", "")  # Default to empty string if missing
+    
             # Assign the correct heading field based on scene type
             if scene["scene_type"] == "Main":
-                scene_data["main_heading"] = scene["heading"]
+                scene_data["main_heading"] = scene_heading
             elif scene["scene_type"] == "Continue":
-                scene_data["continue_heading"] = scene["heading"]
+                scene_data["continue_heading"] = scene_heading
             elif scene["scene_type"] == "Question":
-                scene_data["question_heading"] = scene["heading"]
+                scene_data["question_heading"] = scene_heading
     
             yaml_data["options"][scene["scene_id"]] = scene_data
     
@@ -308,7 +267,7 @@ class MainWindow:
         self.yaml_preview.delete(1.0, tk.END)
         self.yaml_preview.insert(tk.END, yaml.dump(yaml_data, sort_keys=False, default_flow_style=False))
         self.yaml_preview.config(state=tk.DISABLED)
-    
+
 
     def generate_yaml(self):
         """Convert scenes list into YAML format."""
