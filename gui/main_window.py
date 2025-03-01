@@ -3,6 +3,8 @@ from tkinter import filedialog, messagebox
 import yaml  # Import PyYAML to handle YAML formatting
 from core.folder_manager import FolderManager
 from gui.scene_editor import SceneEditor
+import re  # Import regex to extract numbers from scene ID
+import tkinter.simpledialog as simpledialog  # Add this for popup
 
 
 class MainWindow:
@@ -44,10 +46,11 @@ class MainWindow:
 
     def setup_ui(self):
         # Main layout frames
-        # Adjust grid weights to ensure middle section expands properly
+        # Ensure right section (YAML Preview) expands to max width first, then middle section fills remaining space
         self.root.grid_columnconfigure(0, weight=1)  # Left sidebar (scene list)
-        self.root.grid_columnconfigure(1, weight=4)  # Middle section (scene editor) expands
-        self.root.grid_columnconfigure(2, weight=0)  # Right section (YAML preview), fixed width
+        self.root.grid_columnconfigure(1, weight=1)  # Middle section will fill remaining space
+        self.root.grid_columnconfigure(2, weight=2)  # Right section expands first (higher priority)
+        
         
         self.root.grid_rowconfigure(0, weight=1)
         
@@ -66,8 +69,11 @@ class MainWindow:
         self.root.grid_columnconfigure(1, weight=3)  # Increase weight so it takes up more space
         
         
+        # Ensure right section expands first to its max width
         self.right_frame = tk.Frame(self.root)
         self.right_frame.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
+        self.root.grid_columnconfigure(2, weight=2)  # Ensure right section expands first
+        
         
 
         # Folder Selection Section
@@ -108,10 +114,10 @@ class MainWindow:
         # Scene Editor Section
         self.scene_editor = None  # Placeholder for the editor
 
-        # YAML Preview Section
-        # YAML Preview Section (with Max Width and Toggle Button)
-        self.yaml_frame = tk.Frame(self.right_frame, width=1000)  # Max width constraint
-        self.yaml_frame.pack(fill=tk.Y, side=tk.RIGHT, expand=False)  # Align Right
+        # Allow YAML preview to stretch fully within right section
+        self.yaml_frame = tk.Frame(self.right_frame, width=1500)  # Max width constraint
+        self.yaml_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)  # Allow it to stretch
+        
         
         
         self.yaml_label = tk.Label(self.yaml_frame, text="Live YAML Preview", font=("Arial", 14))
@@ -574,23 +580,55 @@ class MainWindow:
             self.scene_listbox.selection_set(selection)
             self.context_menu.post(event.x_root, event.y_root)
     
+
     def duplicate_scene(self):
-        """Duplicate the selected scene and assign a new scene ID."""
+        """Duplicate the selected scene, increment the scene ID, and exclude temporary choices."""
         selection = self.scene_listbox.curselection()
         if selection:
             index = selection[0]
             original_scene = self.scenes[index].copy()
     
-            # Generate a new unique scene ID
-            base_id = original_scene["scene_id"]
-            new_id = f"{base_id}_copy"
-            count = 1
-            while self.scene_exists(new_id):
-                count += 1
-                new_id = f"{base_id}_copy{count}"
+            # Remove temporary choices before duplicating
+            duplicated_choices = [choice for choice in original_scene["choices"] if not choice.get("temporary", False)]
     
-            original_scene["scene_id"] = new_id
-            self.scenes.insert(index + 1, original_scene)
-            self.update_scene_list()
-            self.update_yaml_preview()
+            # Extract base scene ID and increment the number
+            base_id = original_scene["scene_id"]
+            match = re.match(r"([a-zA-Z]+)(\d+)\.(\d+)", base_id)  # Match format like "s4.3"
+            if match:
+                prefix, major, minor = match.groups()
+                major, minor = int(major), int(minor)
+                
+                # Find the next available scene ID
+                while True:
+                    minor += 1  # Increment the minor version (e.g., s4.3 → s4.4)
+                    new_id = f"{prefix}{major}.{minor}"
+                    if not self.scene_exists(new_id):  # Ensure it's unique
+                        break
+            else:
+                # If no match, just append "_copy" (fallback)
+                new_id = f"{base_id}_copy"
+    
+            # **Popup to Edit Scene ID**
+            new_scene_id = simpledialog.askstring("Edit Scene ID", "Modify the Scene ID:", initialvalue=new_id)
+            
+            if new_scene_id:
+                # Prepare the new scene with the new ID (allow user to edit it)
+                new_scene = {
+                    "scene_id": new_scene_id,  # Auto-generated new ID or user-modified
+                    "video": original_scene["video"],
+                    "scene_type": original_scene["scene_type"],
+                    "heading": original_scene.get("heading", ""),
+                    "choices": duplicated_choices,  # Only normal choices
+                }
+    
+                # Open the duplicated scene in the editor for the user to review and edit
+                if self.scene_editor:
+                    self.scene_editor.frame.destroy()
+    
+                self.scene_editor = SceneEditor(
+                    self.middle_frame,
+                    self.folder_manager,
+                    self.save_scene,
+                    scene_data=new_scene  # Allow editing before saving
+                )
     
