@@ -581,6 +581,7 @@ class MainWindow:
             self.context_menu.post(event.x_root, event.y_root)
     
 
+
     def duplicate_scene(self):
         """Duplicate the selected scene, increment the scene ID, and exclude temporary choices."""
         selection = self.scene_listbox.curselection()
@@ -591,8 +592,11 @@ class MainWindow:
             # Remove temporary choices before duplicating
             duplicated_choices = [choice for choice in original_scene["choices"] if not choice.get("temporary", False)]
     
-            # Extract base scene ID and increment the number
+            # Initialize `new_scene_id` and get base scene ID
             base_id = original_scene["scene_id"]
+            new_scene_id = base_id  # Default to the original scene ID (we'll modify if needed)
+    
+            # Extract base scene ID and increment the number
             match = re.match(r"([a-zA-Z]+)(\d+)\.(\d+)", base_id)  # Match format like "s4.3"
             if match:
                 prefix, major, minor = match.groups()
@@ -601,25 +605,28 @@ class MainWindow:
                 # Find the next available scene ID
                 while True:
                     minor += 1  # Increment the minor version (e.g., s4.3 → s4.4)
-                    new_id = f"{prefix}{major}.{minor}"
-                    if not self.scene_exists(new_id):  # Ensure it's unique
+                    new_scene_id = f"{prefix}{major}.{minor}"
+                    if not self.scene_exists(new_scene_id):  # Ensure it's unique
                         break
             else:
                 # If no match, just append "_copy" (fallback)
-                new_id = f"{base_id}_copy"
+                new_scene_id = f"{base_id}_copy"
     
             # **Popup to Edit Scene ID**
-            new_scene_id = simpledialog.askstring("Edit Scene ID", "Modify the Scene ID:", initialvalue=new_id)
+            new_scene_id = simpledialog.askstring("Edit Scene ID", "Modify the Scene ID:", initialvalue=new_scene_id)
             
             if new_scene_id:
-                # Prepare the new scene with the new ID (allow user to edit it)
+                # Create the new scene with the new ID (allow user to edit it)
                 new_scene = {
-                    "scene_id": new_scene_id,  # Auto-generated new ID or user-modified
-                    "video": original_scene["video"],
+                    "scene_id": new_scene_id,  # Auto-generated new ID
+                    "video": original_scene["video"],  # Copy original video's video
                     "scene_type": original_scene["scene_type"],
                     "heading": original_scene.get("heading", ""),
                     "choices": duplicated_choices,  # Only normal choices
                 }
+    
+                # **Add the new scene's video to video_associations**
+                self.video_associations[new_scene_id] = f"videos/{original_scene['video']}"
     
                 # Open the duplicated scene in the editor for the user to review and edit
                 if self.scene_editor:
@@ -631,4 +638,8 @@ class MainWindow:
                     self.save_scene,
                     scene_data=new_scene  # Allow editing before saving
                 )
+    
+                # **Force update of YAML preview to include the new scene**
+                self.update_yaml_preview()
+    
     
