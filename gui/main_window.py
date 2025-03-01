@@ -44,10 +44,11 @@ class MainWindow:
 
     def setup_ui(self):
         # Main layout frames
-        # Use a grid-based layout for better scaling
-        self.root.grid_columnconfigure(0, weight=3)  # 30% width
-        self.root.grid_columnconfigure(1, weight=3)  # 30% width
-        self.root.grid_columnconfigure(2, weight=4)  # 40% width
+        # Adjust grid weights to ensure middle section expands properly
+        self.root.grid_columnconfigure(0, weight=1)  # Left sidebar (scene list)
+        self.root.grid_columnconfigure(1, weight=4)  # Middle section (scene editor) expands
+        self.root.grid_columnconfigure(2, weight=0)  # Right section (YAML preview), fixed width
+        
         self.root.grid_rowconfigure(0, weight=1)
         
         # Main layout frames with proportional scaling
@@ -55,8 +56,11 @@ class MainWindow:
         self.left_frame.grid_propagate(False)  # Prevent the frame from resizing automatically
         self.left_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
         
+        # Ensure middle section fully expands to use available space
         self.middle_frame = tk.Frame(self.root)
         self.middle_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+        self.root.grid_columnconfigure(1, weight=4)  # Ensure this section expands dynamically
+        
         
         # Allow the middle section to expand dynamically
         self.root.grid_columnconfigure(1, weight=3)  # Increase weight so it takes up more space
@@ -106,7 +110,7 @@ class MainWindow:
 
         # YAML Preview Section
         # YAML Preview Section (with Max Width and Toggle Button)
-        self.yaml_frame = tk.Frame(self.right_frame, width=650)  # Max width constraint
+        self.yaml_frame = tk.Frame(self.right_frame, width=1000)  # Max width constraint
         self.yaml_frame.pack(fill=tk.Y, side=tk.RIGHT, expand=False)  # Align Right
         
         
