@@ -66,7 +66,8 @@ class SceneEditor:
         self.heading_label = tk.Label(self.frame, text="Scene Heading:")
         self.heading_label.pack(pady=5)
         self.heading_entry = tk.Entry(self.frame)
-        self.heading_entry.pack(pady=5)
+        self.heading_entry.pack(pady=5, fill="x", expand=True)
+        
     
         # Determine correct heading key based on scene type
         if self.scene_data:

@@ -58,6 +58,10 @@ class MainWindow:
         self.middle_frame = tk.Frame(self.root)
         self.middle_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
         
+        # Allow the middle section to expand dynamically
+        self.root.grid_columnconfigure(1, weight=3)  # Increase weight so it takes up more space
+        
+        
         self.right_frame = tk.Frame(self.root)
         self.right_frame.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
         
@@ -105,11 +109,6 @@ class MainWindow:
         self.yaml_frame = tk.Frame(self.right_frame, width=650)  # Max width constraint
         self.yaml_frame.pack(fill=tk.Y, side=tk.RIGHT, expand=False)  # Align Right
         
-        # Toggle Button
-        # Toggle Button (Move Outside `self.yaml_frame`)
-        self.toggle_yaml_btn = tk.Button(self.right_frame, text="Hide YAML", command=self.toggle_yaml_preview)
-        self.toggle_yaml_btn.pack(pady=5)
-        
         
         self.yaml_label = tk.Label(self.yaml_frame, text="Live YAML Preview", font=("Arial", 14))
         self.yaml_label.pack(pady=5)
@@ -124,6 +123,11 @@ class MainWindow:
             self.left_frame, text="Save YAML", command=self.save_yaml_file
         )
         save_yaml_btn.pack(pady=5)
+        
+        # YAML Toggle Button (Placed Below Save/Load YAML)
+        self.toggle_yaml_btn = tk.Button(self.left_frame, text="Hide YAML", command=self.toggle_yaml_preview)
+        self.toggle_yaml_btn.pack(pady=5)
+        
         
         # Right-click context menu
         self.context_menu = tk.Menu(self.root, tearoff=0)
