@@ -245,7 +245,6 @@ class SceneEditor:
                 if "image_dropdown" in choice:
                     choice["image_dropdown"]['values'] = file_list
     
-    
     def save_scene(self):
         """Saves the scene data entered in the editor and ensures the heading is saved correctly."""
     
@@ -288,6 +287,8 @@ class SceneEditor:
     
         # **Save all choices**
         new_temporary_choices = set()  # Track new temporary choices
+        temp_videos = {}  # Store temp videos to ensure they are added to `videos` section
+    
         for choice in self.choices:
             option_text = choice["option_entry"].get().strip()
             next_scene = choice["next_scene_entry"].get().strip()
@@ -309,19 +310,26 @@ class SceneEditor:
                 "image": image if image else None,
                 "temporary": bool(temporary)
             }
-            
-            # **If temporary, store the selected video**
+    
+            # **If temporary, store the selected temp video**
             if temporary:
-                selected_video = choice.get("video_var").get()
+                selected_video = choice.get("video_var").get().strip()
                 if selected_video:
                     choice_data["temp_video"] = selected_video  # Store Video Selection
-            
+                    temp_videos[next_scene] = f"videos/{selected_video}"  # Ensure temp videos are stored
+    
             new_scene["choices"].append(choice_data)
-            
     
         # **Pass the scene data to the main window**
-        self.new_scene = new_scene  # Ensure `self.new_scene` is updated
         self.save_callback(new_scene)  # Send the scene back for storage
+    
+        # **Ensure temp videos are added to the video associations in the main window**
+        if hasattr(self, "main_window") and hasattr(self.main_window, "video_associations"):
+            self.main_window.video_associations.update(temp_videos)
+    
+        # **Force the YAML preview to refresh after saving**
+        if hasattr(self, "main_window"):
+            self.main_window.update_yaml_preview()
     
         # **Remove old temporary choices from videos if they no longer exist**
         if hasattr(self, "video_associations"):

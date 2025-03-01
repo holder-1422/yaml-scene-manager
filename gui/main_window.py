@@ -230,8 +230,13 @@ class MainWindow:
             self.scenes.append(new_scene)  # If not found, add as a new scene
     
         # Refresh the scene list and YAML preview
+        # Ensure the videos section gets updated
+        scene_id = new_scene["scene_id"]
+        self.video_associations[scene_id] = f"videos/{new_scene['video']}"
+        
         self.update_scene_list()
-        self.update_yaml_preview()
+        self.update_yaml_preview()  # Refresh the preview with updated videos
+        
     
     
     
@@ -260,10 +265,10 @@ class MainWindow:
                 if next_scene_id:
                     all_referenced_scenes.add(next_scene_id)
     
-                # **If the choice is temporary, add its selected video**
-                if choice.get("temporary"):
-                    temp_video = choice.get("temp_video", "").strip()
-                    if temp_video:  
+                # **Ensure temporary choices store their temp_video under the correct next_scene ID**
+                if choice.get("temporary") and "temp_video" in choice:
+                    temp_video = choice["temp_video"].strip()
+                    if temp_video:
                         self.video_associations[next_scene_id] = f"videos/{temp_video}"
     
         # Ensure all referenced scenes exist in the videos section
@@ -271,10 +276,21 @@ class MainWindow:
             if scene_id not in self.video_associations:
                 self.video_associations[scene_id] = f"videos/{scene_id}.mp4"
     
-        # Generate the full YAML structure again
+        # **Regenerate the videos section dynamically**
+        self.video_associations.update({scene["scene_id"]: f"videos/{scene['video']}" for scene in self.scenes})
+    
+        # **Ensure temp videos are properly linked to their next_scene IDs**
+        for scene in self.scenes:
+            for choice in scene.get("choices", []):
+                if choice.get("temporary") and "temp_video" in choice:
+                    temp_video = choice["temp_video"].strip()
+                    next_scene_id = choice["next_scene"]
+                    if temp_video and next_scene_id:  # Ensure both exist
+                        self.video_associations[next_scene_id] = f"videos/{temp_video}"  # Use next_scene ID, not filename
+    
         yaml_data = {
             "start": self.scenes[0]["scene_id"] if self.scenes else "",
-            "videos": self.video_associations.copy(),  # Preserve all video links
+            "videos": self.video_associations.copy(),
             "options": {}
         }
     
@@ -317,27 +333,26 @@ class MainWindow:
         self.yaml_preview.config(state=tk.DISABLED)
     
 
-
     def generate_yaml(self):
         """Convert scenes list into YAML format."""
         if not self.scenes:
             return "No scenes available."
     
+        # Ensure all main scene videos are included
+        self.video_associations = {scene["scene_id"]: f"videos/{scene['video']}" for scene in self.scenes}
+    
         yaml_structure = {
             "start": self.scenes[0]["scene_id"],  # First scene becomes the starting scene
-            "videos": {},
+            "videos": self.video_associations.copy(),  # Ensure videos include temp videos
             "options": {}
         }
     
-        # Fill in the videos and options sections
+        # Fill in the options section
         for scene in self.scenes:
             scene_id = scene["scene_id"]
-            video_path = f"videos/{scene['video']}" if scene["video"] else "videos/default.mp4"
-            yaml_structure["videos"][scene_id] = video_path
-    
-            # Construct scene data
             scene_data = {
                 "scene_type": scene["scene_type"],
+                "choices": {}
             }
     
             # Correctly store heading under the appropriate field name
@@ -348,8 +363,7 @@ class MainWindow:
             elif scene["scene_type"] == "Question":
                 scene_data["question_heading"] = scene.get("heading", "")
     
-            # Add choices
-            scene_data["choices"] = {}
+            # Add choices, ensuring temp_video is stored correctly
             for choice in scene.get("choices", []):
                 choice_data = {
                     "next": choice["next_scene"]
@@ -358,14 +372,25 @@ class MainWindow:
                     choice_data["image"] = f"images/{choice['image']}"
                 if choice["temporary"]:
                     choice_data["temporary"] = True
+                    if "temp_video" in choice:
+                        temp_video_file = choice["temp_video"]
+                        temp_video_scene_id = choice["next_scene"]  # Use next_scene as the key
+                        temp_video_path = f"videos/{temp_video_file}"
+    
+                        # Ensure temp video is stored under the correct next_scene ID
+                        if temp_video_scene_id:
+                            self.video_associations[temp_video_scene_id] = temp_video_path  
+                            choice_data["temp_video"] = temp_video_path  # Store it under choices
     
                 scene_data["choices"][choice["option"]] = choice_data
     
-            # Store scene data in the options section
             yaml_structure["options"][scene_id] = scene_data
     
+        # Ensure temp videos are written in the final YAML under "videos:"
+        yaml_structure["videos"] = self.video_associations.copy()
+    
         return yaml.dump(yaml_structure, sort_keys=False, default_flow_style=False)
-        
+    
     
     def validate_scene_references(self):
         """Highlight choices with non-existent next scene references, ensuring temporary choices are properly validated."""
