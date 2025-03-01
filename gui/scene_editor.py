@@ -78,9 +78,6 @@ class SceneEditor:
             elif scene_type == "Question":
                 self.heading_label.config(text="Question Heading:")
         
-            # Debugging: Confirm correct heading is used
-            print(f"DEBUG: Scene Editor - Scene Type: {scene_type}, Heading: {self.scene_data.get('heading', '')}")
-        
             # Insert heading if available (use the correct key "heading")
             self.heading_entry.insert(0, self.scene_data.get("heading", ""))
         

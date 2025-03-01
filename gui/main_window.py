@@ -177,6 +177,20 @@ class MainWindow:
         self.scene_editor = SceneEditor(self.middle_frame, self.folder_manager, self.save_scene)
 
     def save_scene(self, updated_scene):
+        # Ensure heading is correctly stored under the appropriate key
+        scene_type = updated_scene.get("scene_type", "")
+    
+        if scene_type == "Main":
+            updated_scene["main_heading"] = updated_scene.get("heading", "")
+        elif scene_type == "Continue":
+            updated_scene["continue_heading"] = updated_scene.get("heading", "")
+        elif scene_type == "Question":
+            updated_scene["question_heading"] = updated_scene.get("heading", "")
+    
+        # Remove the generic "heading" key after assigning it correctly
+        if "heading" in updated_scene:
+            del updated_scene["heading"]
+    
         # Replace the scene if it already exists
         for i, scene in enumerate(self.scenes):
             if scene["scene_id"] == updated_scene["scene_id"]:
@@ -185,7 +199,7 @@ class MainWindow:
         else:
             # If it doesn't exist yet, add it as a new scene
             self.scenes.append(updated_scene)
-
+    
         # Automatically create new scenes for referenced next_scene_id
         for choice in updated_scene.get("choices", []):
             next_scene_id = choice["next_scene"]
@@ -194,14 +208,15 @@ class MainWindow:
                     "scene_id": next_scene_id,
                     "video": None,
                     "scene_type": "Continue",
-                    "heading": "[Auto-created Scene]",
+                    "continue_heading": "[Auto-created Scene]",
                     "choices": [],
                     "auto_created": True
                 }
                 self.scenes.append(auto_created_scene)
-
+    
         self.update_scene_list()
         self.update_yaml_preview()
+    
 
     def update_scene_list(self):
         self.scene_listbox.delete(0, tk.END)  # Clear the list
@@ -237,20 +252,19 @@ class MainWindow:
     
             # Construct scene data
             scene_data = {
-                "scene_type": scene["scene_type"]
+                "scene_type": scene["scene_type"],
             }
     
-            # Insert the correct heading field based on scene type
+            # Correctly store heading under the appropriate field name
             if scene["scene_type"] == "Main":
-                scene_data["main_heading"] = scene.get("main_heading", "")
+                scene_data["main_heading"] = scene.get("heading", "")
             elif scene["scene_type"] == "Continue":
-                scene_data["continue_heading"] = scene.get("continue_heading", "")
+                scene_data["continue_heading"] = scene.get("heading", "")
             elif scene["scene_type"] == "Question":
-                scene_data["question_heading"] = scene.get("question_heading", "")
+                scene_data["question_heading"] = scene.get("heading", "")
     
-            # Add choices below scene_type and heading
+            # Add choices
             scene_data["choices"] = {}
-    
             for choice in scene.get("choices", []):
                 choice_data = {
                     "next": choice["next_scene"]
@@ -266,7 +280,7 @@ class MainWindow:
             yaml_structure["options"][scene_id] = scene_data
     
         return yaml.dump(yaml_structure, sort_keys=False, default_flow_style=False)
-    
+        
     
     
     def validate_scene_references(self):
@@ -362,7 +376,6 @@ class MainWindow:
                         "choices": choices
                     }
                     self.scenes.append(scene)
-                    print(f"DEBUG: Scene Loaded: {scene}")
     
                 # Update the GUI
                 self.update_scene_list()
