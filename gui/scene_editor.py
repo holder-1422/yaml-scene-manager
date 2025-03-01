@@ -221,29 +221,28 @@ class SceneEditor:
                     choice["image_dropdown"]['values'] = file_list
     
     
-    
-
-    def save_scene(self, event=None):
-        """Saves the scene data entered in the editor and prevents errors."""
+    def save_scene(self):
+        """Saves the scene data entered in the editor and ensures the heading is saved correctly."""
     
         scene_id = self.scene_id_entry.get().strip()
         video = self.video_var.get()
         scene_type = self.scene_type_var.get()
-        scene_heading = self.heading_entry.get().strip()
+        scene_heading = self.heading_entry.get().strip()  # Ensure heading is captured
     
-        if not scene_id or not video or not scene_type or not scene_heading:
+        if not scene_id or not video or not scene_type:
             messagebox.showerror("Missing Information", "Please fill in all required fields.")
             return  # Exit if missing information
     
-        # **Initialize `new_scene` FIRST before appending choices**
+        # **Ensure `new_scene` is properly initialized**
         new_scene = {
             "scene_id": scene_id,
             "video": video,
             "scene_type": scene_type,
-            "choices": []  # Initialize as empty list before appending
+            "choices": [],  # Initialize empty choices list
+            "heading": scene_heading  # Ensure heading is stored
         }
     
-        # **Store heading correctly based on scene type**
+        # **Ensure heading is stored in the correct field**
         if scene_type == "Main":
             new_scene["main_heading"] = scene_heading
         elif scene_type == "Continue":
@@ -251,11 +250,19 @@ class SceneEditor:
         elif scene_type == "Question":
             new_scene["question_heading"] = scene_heading
     
-        # **Ensure `self.choices` exists before using it**
+        # **Ensure choices exist before looping**
         if not hasattr(self, "choices") or not isinstance(self.choices, list):
             self.choices = []
     
-        # **Loop through choices and append them to `new_scene`**
+        # **Track old temporary choices before updating**
+        old_temporary_choices = set()
+        if hasattr(self, "new_scene") and isinstance(self.new_scene, dict):
+            old_temporary_choices = {
+                choice["next_scene"] for choice in self.new_scene.get("choices", []) if choice["temporary"]
+            }
+    
+        # **Save all choices**
+        new_temporary_choices = set()  # Track new temporary choices
         for choice in self.choices:
             option_text = choice["option_entry"].get().strip()
             next_scene = choice["next_scene_entry"].get().strip()
@@ -266,22 +273,28 @@ class SceneEditor:
                 messagebox.showerror("Missing Information", "Each choice must have an option text and a next scene ID.")
                 return  # Exit if missing information
     
-            # **Append the choice safely**
+            # Track new temporary choices
+            if temporary:
+                new_temporary_choices.add(next_scene)
+    
+            # **Append choice safely**
             new_scene["choices"].append({
                 "option": option_text,
                 "next_scene": next_scene,
                 "image": image if image else None,
-                "temporary": bool(temporary)  # Ensure boolean value
+                "temporary": bool(temporary)
             })
     
-        # **Ensure `save_callback` is correctly called**
-        if callable(self.save_callback):
-            self.save_callback(new_scene)  # Send the scene back for storage
-        else:
-            messagebox.showerror("Error", "save_callback is not callable. Check function assignment.")
+        # **Pass the scene data to the main window**
+        self.new_scene = new_scene  # Ensure `self.new_scene` is updated
+        self.save_callback(new_scene)  # Send the scene back for storage
+    
+        # **Remove old temporary choices from videos if they no longer exist**
+        if hasattr(self, "video_associations"):
+            for old_next_scene in old_temporary_choices:
+                if old_next_scene not in new_temporary_choices:
+                    self.video_associations.pop(old_next_scene, None)  # Safely remove if it still exists
     
         # **Close the editor**
         self.frame.destroy()
-    
-    
     

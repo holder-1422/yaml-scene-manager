@@ -25,11 +25,14 @@ class MainWindow:
         if selection:
             index = selection[0]
             selected_scene = self.scenes[index]  # Fetch the scene details
-
+    
             # Clear the existing editor if open
             if self.scene_editor:
                 self.scene_editor.frame.destroy()
-
+    
+            # Ensure the heading exists before passing data
+            selected_scene.setdefault("heading", "")  # Default to empty string if missing
+    
             # Open the selected scene in the editor
             self.scene_editor = SceneEditor(
                 self.middle_frame,
@@ -37,6 +40,7 @@ class MainWindow:
                 self.save_scene,
                 scene_data=selected_scene  # Pass existing data for editing
             )
+    
 
     def setup_ui(self):
         # Main layout frames
@@ -246,16 +250,19 @@ class MainWindow:
                 }
             }
     
-            # **Ensure scene["heading"] exists before using it**
+            # Ensure scene["heading"] exists before using it
             scene_heading = scene.get("heading", "")  # Default to empty string if missing
-    
+            
             # Assign the correct heading field based on scene type
             if scene["scene_type"] == "Main":
-                scene_data["main_heading"] = scene_heading
+                scene_data["main_heading"] = scene.get("main_heading", scene_heading)
             elif scene["scene_type"] == "Continue":
-                scene_data["continue_heading"] = scene_heading
+                scene_data["continue_heading"] = scene.get("continue_heading", scene_heading)
             elif scene["scene_type"] == "Question":
-                scene_data["question_heading"] = scene_heading
+                scene_data["question_heading"] = scene.get("question_heading", scene_heading)
+            else:
+                scene_data["scene_heading"] = scene_heading  # Catch-all for unknown types
+            
     
             yaml_data["options"][scene["scene_id"]] = scene_data
     
@@ -318,10 +325,11 @@ class MainWindow:
         return yaml.dump(yaml_structure, sort_keys=False, default_flow_style=False)
         
     
-    
     def validate_scene_references(self):
-        """Highlight choices with non-existent next scene references."""
+        """Highlight choices with non-existent next scene references, ensuring temporary choices are properly validated."""
         valid_scene_ids = {scene["scene_id"] for scene in self.scenes}
+        valid_scene_ids.update(self.video_associations.keys())  # Ensure temporary choices are considered valid
+    
         invalid_references = []
     
         for scene in self.scenes:
@@ -335,7 +343,9 @@ class MainWindow:
                 message += f"Scene '{scene_id}' → Invalid next_scene ID '{invalid_ref}'\n"
             messagebox.showerror("Invalid References", message)
             return False  # Validation failed
+    
         return True  # Validation passed
+    
     
 
     def save_yaml_file(self):
