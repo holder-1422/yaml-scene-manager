@@ -101,11 +101,22 @@ class MainWindow:
         self.scene_editor = None  # Placeholder for the editor
 
         # YAML Preview Section
-        self.yaml_label = tk.Label(self.right_frame, text="Live YAML Preview", font=("Arial", 14))
-        self.yaml_label.pack(pady=10)
-
-        self.yaml_preview = tk.Text(self.right_frame, state=tk.DISABLED, bg="#f4f4f4")
-        self.yaml_preview.pack(fill=tk.BOTH, expand=True, pady=10)
+        # YAML Preview Section (with Max Width and Toggle Button)
+        self.yaml_frame = tk.Frame(self.right_frame, width=650)  # Max width constraint
+        self.yaml_frame.pack(fill=tk.Y, side=tk.RIGHT, expand=False)  # Align Right
+        
+        # Toggle Button
+        # Toggle Button (Move Outside `self.yaml_frame`)
+        self.toggle_yaml_btn = tk.Button(self.right_frame, text="Hide YAML", command=self.toggle_yaml_preview)
+        self.toggle_yaml_btn.pack(pady=5)
+        
+        
+        self.yaml_label = tk.Label(self.yaml_frame, text="Live YAML Preview", font=("Arial", 14))
+        self.yaml_label.pack(pady=5)
+        
+        self.yaml_preview = tk.Text(self.yaml_frame, state=tk.DISABLED, bg="#f4f4f4", width=60)
+        self.yaml_preview.pack(fill=tk.BOTH, expand=True, pady=5)
+        
         
 
         # Save YAML Button
@@ -133,7 +144,18 @@ class MainWindow:
         """Start dragging a scene with highlight."""
         self.dragging_index = self.scene_listbox.nearest(event.y)
         self.scene_listbox.itemconfig(self.dragging_index, bg="lightblue")
+
+    def toggle_yaml_preview(self):
+        """Toggles the visibility of the YAML preview section."""
+        if self.yaml_frame.winfo_ismapped():
+            self.yaml_frame.pack_forget()  # Hide YAML section
+            self.toggle_yaml_btn.config(text="Show YAML")
+        else:
+            self.yaml_frame.pack(fill=tk.Y, side=tk.RIGHT, expand=False)  # Show YAML section
+            self.toggle_yaml_btn.config(text="Hide YAML")
     
+
+   
     def drag_motion(self, event):
         """Handle the dragging motion and auto-scroll."""
         new_index = self.scene_listbox.nearest(event.y)
