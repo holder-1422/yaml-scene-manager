@@ -260,39 +260,23 @@ class MainWindow:
         # Ensure `video_associations` exists before using it
         if not hasattr(self, "video_associations") or not isinstance(self.video_associations, dict):
             self.video_associations = {}
-        
     
-        # Ensure all referenced `next_scene` values are in `videos`
-        all_referenced_scenes = set(self.video_associations.keys())
+        # Start by clearing and rebuilding video_associations to ensure it's correct
+        self.video_associations.clear()
     
+        # Add standard scene videos to the videos section
         for scene in self.scenes:
-            for choice in scene["choices"]:
-                next_scene_id = choice["next_scene"]
-                if next_scene_id:
-                    all_referenced_scenes.add(next_scene_id)
+            self.video_associations[scene["scene_id"]] = f"videos/{scene['video']}"
     
-                # **Ensure temporary choices store their temp_video under the correct next_scene ID**
-                if choice.get("temporary") and "temp_video" in choice:
-                    temp_video = choice["temp_video"].strip()
-                    if temp_video:
-                        self.video_associations[next_scene_id] = f"videos/{temp_video}"
-    
-        # Ensure all referenced scenes exist in the videos section
-        for scene_id in all_referenced_scenes:
-            if scene_id not in self.video_associations:
-                self.video_associations[scene_id] = f"videos/{scene_id}.mp4"
-    
-        # **Regenerate the videos section dynamically**
-        self.video_associations.update({scene["scene_id"]: f"videos/{scene['video']}" for scene in self.scenes})
-    
-        # **Ensure temp videos are properly linked to their next_scene IDs**
+        # Ensure only temporary choices with `temp_video` are added to `videos:`
         for scene in self.scenes:
             for choice in scene.get("choices", []):
                 if choice.get("temporary") and "temp_video" in choice:
                     temp_video = choice["temp_video"].strip()
                     next_scene_id = choice["next_scene"]
+    
                     if temp_video and next_scene_id:  # Ensure both exist
-                        self.video_associations[next_scene_id] = f"videos/{temp_video}"  # Use next_scene ID, not filename
+                        self.video_associations[next_scene_id] = f"videos/{temp_video}"  # ✅ Correctly map to next_scene_id
     
         yaml_data = {
             "start": self.scenes[0]["scene_id"] if self.scenes else "",
