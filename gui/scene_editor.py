@@ -146,6 +146,8 @@ class SceneEditor:
 
         
     def add_choice(self, existing_choice=None):
+        """Adds a new choice entry to the scene editor, including a temporary video selection if needed."""
+    
         # Create the main frame for each choice
         choice_frame = tk.Frame(self.choices_frame, bd=1, relief=tk.SOLID, padx=5, pady=5)
         choice_frame.pack(fill=tk.X, pady=5)
@@ -176,6 +178,26 @@ class SceneEditor:
         temp_checkbox = tk.Checkbutton(details_frame, text="Temporary", variable=temp_flag)
         temp_checkbox.pack(side=tk.LEFT)
     
+        # Video Selection Dropdown for Temporary Choices (Initially Hidden)
+        video_label = tk.Label(details_frame, text="Temp Video:", font=("Arial", 10))
+        video_var = tk.StringVar()
+        video_dropdown = ttk.Combobox(details_frame, textvariable=video_var, values=[], width=20)
+        video_label.pack_forget()  # Start Hidden
+        video_dropdown.pack_forget()  # Start Hidden
+    
+        # Function to Show/Hide Video Dropdown Based on Temporary Checkbox
+        def toggle_video_dropdown(*args):
+            if temp_flag.get():
+                video_label.pack(side=tk.LEFT, padx=(10, 5))  # Show Label
+                video_dropdown.pack(side=tk.LEFT, padx=(0, 10))  # Show Dropdown
+                video_dropdown["values"] = self._get_files("videos")  # Refresh Video List
+            else:
+                video_label.pack_forget()  # Hide Label
+                video_dropdown.pack_forget()  # Hide Dropdown
+    
+        # Bind Checkbox Click to Toggle Video Dropdown
+        temp_flag.trace_add("write", toggle_video_dropdown)
+    
         # Pre-fill existing data if editing
         if existing_choice:
             option_entry.insert(0, existing_choice["option"])
@@ -184,18 +206,20 @@ class SceneEditor:
                 image_var.set(existing_choice["image"])
             if existing_choice.get("temporary"):
                 temp_flag.set(existing_choice["temporary"])
+                toggle_video_dropdown()  # Show dropdown if it's a temporary choice
+            if existing_choice.get("temp_video"):  # Load temp video if exists
+                video_var.set(existing_choice["temp_video"])
     
         # Store the choice data
         choice_data = {
             "option_entry": option_entry,
             "next_scene_entry": next_scene_entry,
             "image_var": image_var,
-            "temporary_flag": temp_flag
+            "temporary_flag": temp_flag,
+            "video_var": video_var  # Store Selected Video
         }
     
         self.choices.append(choice_data)
-    
-    
     
 
     def _get_files(self, subfolder):
@@ -278,12 +302,21 @@ class SceneEditor:
                 new_temporary_choices.add(next_scene)
     
             # **Append choice safely**
-            new_scene["choices"].append({
+            choice_data = {
                 "option": option_text,
                 "next_scene": next_scene,
                 "image": image if image else None,
                 "temporary": bool(temporary)
-            })
+            }
+            
+            # **If temporary, store the selected video**
+            if temporary:
+                selected_video = choice.get("video_var").get()
+                if selected_video:
+                    choice_data["temp_video"] = selected_video  # Store Video Selection
+            
+            new_scene["choices"].append(choice_data)
+            
     
         # **Pass the scene data to the main window**
         self.new_scene = new_scene  # Ensure `self.new_scene` is updated

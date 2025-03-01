@@ -224,6 +224,12 @@ class MainWindow:
                 if next_scene_id:
                     all_referenced_scenes.add(next_scene_id)
     
+                # **If the choice is temporary, add its selected video**
+                if choice.get("temporary"):
+                    temp_video = choice.get("temp_video", "").strip()
+                    if temp_video:  
+                        self.video_associations[next_scene_id] = f"videos/{temp_video}"
+    
         # Ensure all referenced scenes exist in the videos section
         for scene_id in all_referenced_scenes:
             if scene_id not in self.video_associations:
@@ -252,7 +258,7 @@ class MainWindow:
     
             # Ensure scene["heading"] exists before using it
             scene_heading = scene.get("heading", "")  # Default to empty string if missing
-            
+    
             # Assign the correct heading field based on scene type
             if scene["scene_type"] == "Main":
                 scene_data["main_heading"] = scene.get("main_heading", scene_heading)
@@ -262,7 +268,6 @@ class MainWindow:
                 scene_data["question_heading"] = scene.get("question_heading", scene_heading)
             else:
                 scene_data["scene_heading"] = scene_heading  # Catch-all for unknown types
-            
     
             yaml_data["options"][scene["scene_id"]] = scene_data
     
@@ -274,6 +279,7 @@ class MainWindow:
         self.yaml_preview.delete(1.0, tk.END)
         self.yaml_preview.insert(tk.END, yaml.dump(yaml_data, sort_keys=False, default_flow_style=False))
         self.yaml_preview.config(state=tk.DISABLED)
+    
 
 
     def generate_yaml(self):
