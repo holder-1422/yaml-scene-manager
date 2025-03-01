@@ -72,14 +72,19 @@ class SceneEditor:
         if self.scene_data:
             scene_type = self.scene_data.get("scene_type", "")
             if scene_type == "Main":
-                heading_key = "main_heading"
                 self.heading_label.config(text="Main Heading:")
-            else:
-                heading_key = "scene_heading"
-                self.heading_label.config(text="Scene Heading:")
-    
-            # Insert heading if available
-            self.heading_entry.insert(0, self.scene_data.get(heading_key, ""))
+            elif scene_type == "Continue":
+                self.heading_label.config(text="Continue Heading:")
+            elif scene_type == "Question":
+                self.heading_label.config(text="Question Heading:")
+        
+            # Debugging: Confirm correct heading is used
+            print(f"DEBUG: Scene Editor - Scene Type: {scene_type}, Heading: {self.scene_data.get('heading', '')}")
+        
+            # Insert heading if available (use the correct key "heading")
+            self.heading_entry.insert(0, self.scene_data.get("heading", ""))
+        
+        
     
         # Choices Section (Scrollable Frame)
         choices_container = tk.Frame(self.frame)

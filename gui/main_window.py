@@ -235,18 +235,18 @@ class MainWindow:
             video_path = f"videos/{scene['video']}" if scene["video"] else "videos/default.mp4"
             yaml_structure["videos"][scene_id] = video_path
     
-            # Construct scene data in correct order
+            # Construct scene data
             scene_data = {
-                "scene_type": scene["scene_type"],
+                "scene_type": scene["scene_type"]
             }
     
-            # Insert the correct heading key immediately after scene_type
+            # Insert the correct heading field based on scene type
             if scene["scene_type"] == "Main":
                 scene_data["main_heading"] = scene.get("main_heading", "")
             elif scene["scene_type"] == "Continue":
-                scene_data["continue_heading"] = scene.get("scene_heading", "")
-            else:
-                scene_data["scene_heading"] = scene.get("scene_heading", "")
+                scene_data["continue_heading"] = scene.get("continue_heading", "")
+            elif scene["scene_type"] == "Question":
+                scene_data["question_heading"] = scene.get("question_heading", "")
     
             # Add choices below scene_type and heading
             scene_data["choices"] = {}
@@ -266,6 +266,8 @@ class MainWindow:
             yaml_structure["options"][scene_id] = scene_data
     
         return yaml.dump(yaml_structure, sort_keys=False, default_flow_style=False)
+    
+    
     
     def validate_scene_references(self):
         """Highlight choices with non-existent next scene references."""
@@ -307,33 +309,40 @@ class MainWindow:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save YAML file:\n{e}")
     
-
     def load_yaml_file(self):
         # Ask the user to select a YAML file
         file_path = filedialog.askopenfilename(
             filetypes=[("YAML files", "*.yaml")],
             title="Load YAML File"
         )
-
+    
         if file_path:
             try:
                 with open(file_path, "r") as yaml_file:
                     loaded_yaml = yaml.safe_load(yaml_file)
-
+    
                 # Validate the structure
                 if "start" not in loaded_yaml or "videos" not in loaded_yaml or "options" not in loaded_yaml:
                     messagebox.showerror("Invalid YAML", "The YAML file does not have the required structure.")
                     return
-
+    
                 # Clear the current scenes
                 self.scenes.clear()
-
+    
                 # Load scenes from YAML
                 for scene_id, video_path in loaded_yaml["videos"].items():
                     scene_data = loaded_yaml["options"].get(scene_id, {})
                     scene_type = scene_data.get("scene_type", "Continue")
-                    heading = scene_data.get("continue_heading" if scene_type == "Continue" else "question_heading", "")
-
+    
+                    # Ensure headings are stored under the correct field
+                    heading = ""
+                    if scene_type == "Main":
+                        heading = scene_data.get("main_heading", "")
+                    elif scene_type == "Continue":
+                        heading = scene_data.get("continue_heading", "")
+                    elif scene_type == "Question":
+                        heading = scene_data.get("question_heading", "")
+    
                     # Load choices
                     choices = []
                     for option_text, choice_data in scene_data.get("choices", {}).items():
@@ -343,25 +352,26 @@ class MainWindow:
                             "image": choice_data.get("image", "").replace("images/", ""),
                             "temporary": choice_data.get("temporary", False)
                         })
-
+    
                     # Add scene to the list
                     scene = {
                         "scene_id": scene_id,
                         "video": video_path.replace("videos/", ""),
                         "scene_type": scene_type,
-                        "heading": heading,
+                        "heading": heading,  # Ensuring consistent heading storage
                         "choices": choices
                     }
                     self.scenes.append(scene)
-
+                    print(f"DEBUG: Scene Loaded: {scene}")
+    
                 # Update the GUI
                 self.update_scene_list()
                 self.update_yaml_preview()
                 messagebox.showinfo("Success", f"YAML loaded successfully from {file_path}")
-
+    
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load YAML file:\n{e}")
-
+    
 
     def show_context_menu(self, event):
         """Show right-click context menu on scene list."""
